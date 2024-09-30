@@ -1,38 +1,53 @@
-// Import the Express library
+// Import required modules
 const express = require('express');
 const bodyParser = require('body-parser');
 
-// Create an instance of an Express application
+// Initialize the Express application
 const app = express();
-const PORT = 3000;
-
 app.use(bodyParser.json());
 
-app.use((err, req, res, next) => {
-    console.error(err.stack); 
-    res.status(500).json({ error: 'Something went wrong!' }); 
-});
-
-//array to store user data
+// In-memory array to store user data
 const users = [];
 
-// Route to handle GET requests
-app.get('/users', (req, res) => {
-    console.log('GET /users endpoint was accessed'); 
-    res.status(200).json(users);
-});
+// Define the port
+const PORT = 3000;
 
-
-// Route to handle POST requests
+// POST /register endpoint
 app.post('/register', (req, res) => {
     const { name, email, password } = req.body;
-    users.push({ name, email, password });
-    console.log(`POST /users endpoint was accessed ${JSON.stringify(users)}`);
-    res.status(201).json({ message: 'User registered successfully' });
+
+    // Use a switch statement to handle different validation checks
+    switch (true) {
+        // Check if any field is missing
+        case !name || !email || !password:
+            return res.status(400).json({ error: 'All fields are required.' });
+
+        // Validate email format using a simple regex
+        case !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email):
+            return res.status(400).json({ error: 'Invalid email format.' });
+
+        // 3 password length
+        case password.length < 6:
+            return res.status(400).json({ error: 'Password must be at least 6 characters long.' });
+
+        // Check for unique email
+        case users.some(user => user.email === email):
+            return res.status(409).json({ error: 'Email already exists.' });
+
+        // Default case when all validations pass
+        default:
+            // Add the user to the users array
+            users.push({ name, email, password });
+            return res.status(201).json({ message: 'User registered successfully' });
+    }
 });
 
-// Start the server and listen on the specified port
+// GET /users endpoint to retrieve all registered users
+app.get('/users', (req, res) => {
+    return res.status(200).json(users);
+});
+
+// Start the server
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
-    
